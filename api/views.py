@@ -15,6 +15,25 @@ import json
 # def api_home(request, *args, **kwargs):
 #   return JsonResponse({"messagge": "Aqui estaraán los datos"})
 
+class PointView(View):
+  def get(self, request, id=0):
+    if id>0:
+      points = list(Points.objects.filter(id=id).values())
+      
+      if len(points) >0:
+        point = points[0]
+        
+        datos={'message': 'Success', 'points': points}
+      else:
+        datos={'message': 'Point not found...'}
+    else:
+      points = list(Points.objects.values())
+      if len(points) >0:
+        datos={'message': 'Success', 'points': points}
+      else:
+        datos={'message': 'Points not found...'}
+    return JsonResponse(datos)
+
 class SpringView(View):
   
   @method_decorator(csrf_exempt)
@@ -50,9 +69,11 @@ class SpringView(View):
                     luz1=jd['luz1'], 
                     luz2=jd['luz2'])
     spring.save()
-    point = Points(x=[1.2, 2.0, 3.0], 
-                   y=[1.2, 2.0, 3.0],
-                   z=[1.2, 2.0, 3.0])
+    point = Points(posx=[1.2, 2.0, 3.0], 
+                   posy=[1.2, 2.0, 3.0],
+                   posz=[1.2, 2.0, 3.0],
+                   esf=[1.2, 2.0, 3.0],
+                   spring=spring)
     point.save()
     start_time = time.time()
     print(Spring.fem(spring))
