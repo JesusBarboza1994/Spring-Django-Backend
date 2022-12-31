@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views import View
 from spring.models import Spring
 from points.models import Points
+from forces.models import Forces
 
 import time
 import json
@@ -69,14 +70,29 @@ class SpringView(View):
                     luz1=jd['luz1'], 
                     luz2=jd['luz2'])
     spring.save()
-    point = Points(posx=[1.2, 2.0, 3.0], 
-                   posy=[1.2, 2.0, 3.0],
-                   posz=[1.2, 2.0, 3.0],
-                   esf=[1.2, 2.0, 3.0],
-                   spring=spring)
-    point.save()
+
     start_time = time.time()
-    print(Spring.fem(spring))
+    NodeX, NodeY,NodeZ, storeForceSum, storeDispl, storeStress = Spring.fem(spring)
+    for i in range(len(NodeX)):
+      posX, posY, posZ, stress = ([] for k in range(4))
+      for j in range(len(storeDispl)):
+        posX.append(NodeX[i] + storeDispl[j][i][0])
+        posY.append(NodeY[i] + storeDispl[j][i][1])
+        posZ.append(NodeZ[i] + storeDispl[j][i][2])
+        # print(i)
+        # print(j)
+        # print(storeStress[j][i])
+        if i == 800:
+          stress.append(storeStress[j][i-1])
+        else:  
+          stress.append(storeStress[j][i])
+      point = Points(posx = posX,
+                     posy = posY,
+                     posz = posZ,
+                     esf = stress,
+                     spring = spring)
+      point.save()
+
     print(time.time() - start_time)
     # pointsX, pointsY, pointsZ = Spring.fem(spring)
     # for i in range(len(pointsX)):

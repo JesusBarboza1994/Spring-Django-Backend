@@ -9,7 +9,4 @@ class Points(models.Model):
   posy = ArrayField(models.DecimalField(max_digits=5, decimal_places=1), default=list())
   posz = ArrayField(models.DecimalField(max_digits=5, decimal_places=1), default=list())
   esf = ArrayField(models.DecimalField(max_digits=5, decimal_places=1), default=list())
-  # x = models.DecimalField(max_digits=5, decimal_places=1)
-  # y = models.DecimalField(max_digits=5, decimal_places=1)
-  # z = models.DecimalField(max_digits=5, decimal_places=1)
   spring = models.ForeignKey(Spring, on_delete=models.CASCADE, default="0")

@@ -16,11 +16,6 @@ class Spring(models.Model):
   
   def __str__(self):
     return f'Res. Susp. {self.alambre}x{self.diam}x{self.longitud}x{self.vueltas}'
-
-  def prueba(spring):
-    print("hey!!!!!!!!!!!!!!!!!!!!!!!")
-    print(spring.alambre*2)
-
   
   def fem(spring):
     nodos_x_vta = 80
@@ -55,53 +50,21 @@ class Spring(models.Model):
     area = 0.25*math.pi*float(spring.alambre)**2 #en mm2
     inercia = 0.25*math.pi*(float(spring.alambre)/2)**4 #en mm4
     inerciapolar = inercia*2 
-    # for i in range(nodos):
-    #   point = Points(x = node_coordX(node_theta[i], radio),
-    #                  y = node_coordY(node_vta[i],nodos_x_vta,spring, h_extremo1, h_extremo2, h_helice, h_cuerpo),
-    #                  z = node_coordZ(node_theta[i], radio),
-    #                  spring = spring)
-    #   point.save()
 
     NodeX = [node_coordX(i, radio) for i in node_theta]
     NodeZ = [node_coordZ(i, radio) for i in node_theta]
     NodeY = [node_coordY(i, nodos_x_vta,spring, h_extremo1, h_extremo2, h_helice, h_cuerpo) for i in node_vta]
 
     #Declarar las dimensiones XYZ de cada elemento viga
-    ElemX=[]
-    ElemY=[]
-    ElemZ=[]
-    Long=[]
-
+    ElemX, ElemY, ElemZ, Long = ([] for i in range(4))    
     #Declarar vectores unitarios axial(x), transversal(z) y vertical(y) del elemento
-    unit_xX = [] 
-    unit_zX = []
-    unit_yX = []
-    unit_xY = [] 
-    unit_zY = []
-    unit_yY = []
-    unit_xZ = [] 
-    unit_zZ = []
-    unit_yZ = []
-
+    unit_xX, unit_zX, unit_yX, unit_xY, unit_zY, unit_yY, unit_xZ, unit_zZ, unit_yZ = ([] for i in range(9))  
     #Declarar angulos entre ejes locales (xyz) y globales(XYZ) del elemento
-    ang_xX = []
-    ang_zX = [] 
-    ang_yX = []
-    ang_xY = []
-    ang_zY = [] 
-    ang_yY = []
-    ang_xZ = []
-    ang_zZ = [] 
-    ang_yZ = []
-    
+    ang_xX, ang_zX,  ang_yX, ang_xY, ang_zY,  ang_yY, ang_xZ, ang_zZ,  ang_yZ = ([] for i in range(9))  
     #Declarar vectores acumuladores de matrices
-    vectorKlocal = []
-    vectorT = []
-    vectorTprime = []
-    vectorKGlobal=[]
-
-    #OPERACIONES POR ELEMENTO   
-
+    vectorKlocal, vectorT, vectorTprime,  vectorKGlobal = ([] for i in range(4))  
+    
+    #OPERACIONES POR ELEMENTO  
     for ii in range(nodos):
       if ii != nodos_x_vta*float(spring.vueltas):
 
@@ -281,21 +244,13 @@ class Spring(models.Model):
       superMatrix[(upnode3)*6+q][nodos*6 + q + 15] = -1 
 
     # CONFIGURACION DE LA SIMULACION
-    # Almacenes de resultados
-    storeForces = [] #Almacena matrices de 6 filas (6 nodos BC) x 3 columnas (X,Y,Z)
-    storeDispl = [] #Almacena matrices de despl. con filas=Total de nodos y 6 columnas (Despl. Traslacional XYZ y Angular XYZ)
-    storeStress= [] #Almacena datos de esfuerzos
-    storeSummary = []
+    # storeForces Almacena matrices de 6 filas (6 nodos BC) x 3 columnas (X,Y,Z)
+    # storeDispl Almacena matrices de despl. con filas=Total de nodos y 6 columnas (Despl. Traslacional XYZ y Angular XYZ)
+    # storeStress matriz de esfuerzo que recopila el mayor valor de los esfuerzos von Mises por nodo
+    storeForces, storeDispl, storeStress, storeSummary = ([] for i in range(4))
 
-    storeForceSum = [] #Vector con la fuerza de reaccion en KG de cada simulacion.
-    storevmuy     = []
-    storevmdz     = []
-    storevmdy     = []
-    storevmuz     = []
-    storecuy      = []
-    storecdz      = []
-    storecdy      = []
-    storecuz      = []
+    # storeForceSum es un vector con la fuerza de reaccion en KG de cada simulacion.
+    storeForceSum, storevmuy, storevmdz, storevmdy, storevmuz, storecuy, storecdz, storecdy, storecuz = ([] for i in range(9))
 
     deltaY = 0
 
@@ -358,16 +313,9 @@ class Spring(models.Model):
 
       # CALCULO DE ESFUERZOS
 
-      stressMatrix=[] #Matriz de esfuerzos, tendremos 6 esfuerzos por fila (cada elemento es una fila tendra sus esfuerzos)
-
-      cuy=[]
-      cdz=[]
-      cdy=[]
-      cuz=[]
-      vmuy=[]
-      vmdz=[]
-      vmdy=[]
-      vmuz=[]
+      stressMatrix=[] # Matriz de esfuerzos, tendremos 6 esfuerzos por fila (cada elemento es una fila tendra sus esfuerzos
+      cuy, cdz, cdy, cuz, vmuy, vmdz, vmdy, vmuz = ([] for i in range(8))
+      maxStressbyNode = []
 
       for pq in range(nodos):
         if pq !=nodos_x_vta*float(spring.vueltas):
@@ -451,7 +399,7 @@ class Spring(models.Model):
           elemStress.append(esfVonMises_UP_Z    )
 
           stressMatrix.append(elemStress)
-
+          maxStressbyNode.append(np.max([esfVonMises_UP_Y, esfVonMises_DOWN_Z, esfVonMises_DOWN_Y, esfVonMises_UP_Z]))
           vmuy.append(esfVonMises_UP_Y)
           vmdz.append(esfVonMises_DOWN_Z)
           vmdy.append(esfVonMises_DOWN_Y)
@@ -462,6 +410,7 @@ class Spring(models.Model):
           cdy.append(abs(esfCorte_DOWN_Y))
           cuz.append(abs(esfCorte_UP_Z  ))
 
+      storeStress.append(maxStressbyNode)
       vmuyMAX = np.max(vmuy)
       vmdzMAX = np.max(vmdz)
       vmdyMAX = np.max(vmdy)
@@ -470,8 +419,6 @@ class Spring(models.Model):
       cdzMAX = np.max(cdz)
       cdyMAX = np.max(cdy)
       cuzMAX = np.max(cuz)
-
-      storeStress.append(stressMatrix)
       
       storevmuy.append(vmuyMAX)
       storevmdz.append(vmdzMAX)
@@ -496,8 +443,11 @@ class Spring(models.Model):
     storeSummary.append(storecuz      )
 
     # showResults(storeSummary,deltaY,"RESUMEN")
-
-    return storeSummary
+    print("AQUIII")
+    print(len(storeForceSum))
+    print("AQUIII")
+    return [NodeX, NodeY, NodeZ ,storeForceSum, storeDispl, storeStress]
+    # return storeSummary
     # return [node_array, node_theta, node_vta]
 
 
