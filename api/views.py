@@ -8,12 +8,32 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views import View
 from spring.models import Spring
 from points.models import Points
+from forces.models import Forces
 
 import time
 import json
 
 # def api_home(request, *args, **kwargs):
 #   return JsonResponse({"messagge": "Aqui estaraán los datos"})
+
+class PointView(View):
+  def get(self, request, id=0):
+    if id>0:
+      points = list(Points.objects.filter(id=id).values())
+      
+      if len(points) >0:
+        point = points[0]
+        
+        datos={'message': 'Success', 'points': points}
+      else:
+        datos={'message': 'Point not found...'}
+    else:
+      points = list(Points.objects.values())
+      if len(points) >0:
+        datos={'message': 'Success', 'points': points}
+      else:
+        datos={'message': 'Points not found...'}
+    return JsonResponse(datos)
 
 class SpringView(View):
   
@@ -50,12 +70,29 @@ class SpringView(View):
                     luz1=jd['luz1'], 
                     luz2=jd['luz2'])
     spring.save()
-    point = Points(x=[1.2, 2.0, 3.0], 
-                   y=[1.2, 2.0, 3.0],
-                   z=[1.2, 2.0, 3.0])
-    point.save()
+
     start_time = time.time()
-    print(Spring.fem(spring))
+    NodeX, NodeY,NodeZ, storeForceSum, storeDispl, storeStress = Spring.fem(spring)
+    for i in range(len(NodeX)):
+      posX, posY, posZ, stress = ([] for k in range(4))
+      for j in range(len(storeDispl)):
+        posX.append(NodeX[i] + storeDispl[j][i][0])
+        posY.append(NodeY[i] + storeDispl[j][i][1])
+        posZ.append(NodeZ[i] + storeDispl[j][i][2])
+        # print(i)
+        # print(j)
+        # print(storeStress[j][i])
+        if i == 800:
+          stress.append(storeStress[j][i-1])
+        else:  
+          stress.append(storeStress[j][i])
+      point = Points(posx = posX,
+                     posy = posY,
+                     posz = posZ,
+                     esf = stress,
+                     spring = spring)
+      point.save()
+
     print(time.time() - start_time)
     # pointsX, pointsY, pointsZ = Spring.fem(spring)
     # for i in range(len(pointsX)):

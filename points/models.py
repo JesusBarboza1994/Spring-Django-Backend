@@ -5,10 +5,8 @@ from spring.models import Spring
 
 # Create your models here.
 class Points(models.Model):
-  x = ArrayField(models.DecimalField(max_digits=5, decimal_places=1))
-  y = ArrayField(models.DecimalField(max_digits=5, decimal_places=1))
-  z = ArrayField(models.DecimalField(max_digits=5, decimal_places=1))
-  # x = models.DecimalField(max_digits=5, decimal_places=1)
-  # y = models.DecimalField(max_digits=5, decimal_places=1)
-  # z = models.DecimalField(max_digits=5, decimal_places=1)
+  posx = ArrayField(models.DecimalField(max_digits=5, decimal_places=1), default=list())
+  posy = ArrayField(models.DecimalField(max_digits=5, decimal_places=1), default=list())
+  posz = ArrayField(models.DecimalField(max_digits=5, decimal_places=1), default=list())
+  esf = ArrayField(models.DecimalField(max_digits=5, decimal_places=1), default=list())
   spring = models.ForeignKey(Spring, on_delete=models.CASCADE, default="0")
