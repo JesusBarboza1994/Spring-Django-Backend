@@ -13,8 +13,37 @@ from forces.models import Forces
 import time
 import json
 
-# def api_home(request, *args, **kwargs):
-#   return JsonResponse({"messagge": "Aqui estaraán los datos"})
+class ForceView(View):
+
+  @method_decorator(csrf_exempt)
+  def dispatch(self, request, *args, **kwargs):
+    return super().dispatch(request, *args, **kwargs)
+
+  def get(self, request, id=0):
+    if id>0:
+      forces = list(Forces.objects.filter(id=id).values())
+      
+      if len(forces) >0:
+        force = forces[0]
+        datos={'message': 'Success', 'forces': force}
+      else:
+        datos={'message': 'Force not found...'}
+    else:
+      forces = list(Forces.objects.values())
+      if len(forces) >0:
+        datos={'message': 'Success', 'forces': forces}
+      else:
+        datos={'message': 'Forces not found...'}
+    return JsonResponse(datos)
+  
+  def delete(self, request, id):
+    forces = list(Spring.objects.filter(id=id).values())
+    if len(forces)>0:
+      Forces.objects.filter(id=id).delete()
+      datos={'message': 'Success'}  
+    else:
+      datos={'message': 'Force not found...'}
+    return JsonResponse(datos)
 
 class PointView(View):
   def get(self, request, id=0):
@@ -23,7 +52,6 @@ class PointView(View):
       
       if len(points) >0:
         point = points[0]
-        
         datos={'message': 'Success', 'points': points}
       else:
         datos={'message': 'Point not found...'}
@@ -48,7 +76,8 @@ class SpringView(View):
       if len(springs) >0:
         spring = springs[0]
         points = list(Points.objects.filter(spring=spring["id"]).values())
-        datos={'message': 'Success', 'springs': spring, 'points': points}
+        forces = list(Forces.objects.filter(spring=spring["id"]).values())
+        datos={'message': 'Success', 'spring': spring, 'points': points, 'forces': forces}
       else:
         datos={'message': 'Spring not found...'}
     else:
@@ -72,16 +101,21 @@ class SpringView(View):
     spring.save()
 
     start_time = time.time()
-    NodeX, NodeY,NodeZ, storeForceSum, storeDispl, storeStress = Spring.fem(spring)
+    NodeX, NodeY,NodeZ, storeForceSum, storeDispl, storeStress, deform, simulations = Spring.fem(spring)
+
+    force = Forces(
+              forces= storeForceSum,
+              displacements = [(deform + deform*j) for j in range(simulations)],
+              spring = spring
+    )
+    force.save()
+
     for i in range(len(NodeX)):
       posX, posY, posZ, stress = ([] for k in range(4))
       for j in range(len(storeDispl)):
         posX.append(NodeX[i] + storeDispl[j][i][0])
         posY.append(NodeY[i] + storeDispl[j][i][1])
         posZ.append(NodeZ[i] + storeDispl[j][i][2])
-        # print(i)
-        # print(j)
-        # print(storeStress[j][i])
         if i == 800:
           stress.append(storeStress[j][i-1])
         else:  
@@ -94,15 +128,6 @@ class SpringView(View):
       point.save()
 
     print(time.time() - start_time)
-    # pointsX, pointsY, pointsZ = Spring.fem(spring)
-    # for i in range(len(pointsX)):
-    #   point = Points(x=pointsX[i],
-    #                  y=pointsY[i],
-    #                  z=pointsZ[i], 
-    #                  spring=spring)
-    #   point.save()
-    # Spring.objects.create(alambre=jd['alambre'], diam=jd['diam'], vueltas=jd['vueltas'], 
-    # longitud=jd['longitud'], luz1=jd['luz1'], luz2=jd['luz2'])
     datos={'message': 'Success'}
     return JsonResponse(datos)
 

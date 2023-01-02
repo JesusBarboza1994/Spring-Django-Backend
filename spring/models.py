@@ -47,6 +47,8 @@ class Spring(models.Model):
     upnode2 = 600 #793 #765    #231       #
     upnode3 = 625 #796 #790    #240       #
 
+    deformacion = 25
+    simulations = 6
     area = 0.25*math.pi*float(spring.alambre)**2 #en mm2
     inercia = 0.25*math.pi*(float(spring.alambre)/2)**4 #en mm4
     inerciapolar = inercia*2 
@@ -258,8 +260,8 @@ class Spring(models.Model):
     inverse = np.linalg.inv(superMatrix)
 
     ##Iteracion de simulaciones!
-    for jj in range(6):
-      deltaY = -25-jj*25
+    for jj in range(simulations):
+      deltaY = -deformacion-jj*deformacion
 
       #Vector de coeficientes independientes:
       coef = []
@@ -446,7 +448,7 @@ class Spring(models.Model):
     print("AQUIII")
     print(len(storeForceSum))
     print("AQUIII")
-    return [NodeX, NodeY, NodeZ ,storeForceSum, storeDispl, storeStress]
+    return [NodeX, NodeY, NodeZ ,storeForceSum, storeDispl, storeStress, deformacion, simulations]
     # return storeSummary
     # return [node_array, node_theta, node_vta]
 
