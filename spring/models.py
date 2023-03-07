@@ -1,9 +1,12 @@
 from django.db import models
 
-
 # from points.models import Points
 import math
 import numpy as np
+
+# Import fem formulas
+from .fem_formulas.coordinates import *
+from .fem_formulas.utils import *
 
 # Create your models here.
 class Spring(models.Model):
@@ -13,14 +16,36 @@ class Spring(models.Model):
   longitud = models.DecimalField(max_digits=6, decimal_places=2)
   luz1 = models.IntegerField()
   luz2 = models.IntegerField()
+
+  diam_int1 = models.DecimalField(max_digits=6, decimal_places=3, default=0)
+  extremo1 = models.CharField(max_length=50, default="-")
+  vuelta_red1 = models.DecimalField(max_digits=6, decimal_places=3, default=0)
+  diam_int2 = models.DecimalField(max_digits=6, decimal_places=3, default=0)
+  extremo2 = models.CharField(max_length=50, default="-")
+  vuelta_red2 = models.DecimalField(max_digits=6, decimal_places=3, default=0)
+  grado = models.IntegerField(default=2)
   
   def __str__(self):
     return f'Res. Susp. {self.alambre}x{self.diam}x{self.longitud}x{self.vueltas}'
-  
+
   def fem(spring):
+    NodeX, NodeY, NodeZ = calculo_coordenadas(
+      spring.alambre,
+      spring.diam,
+      spring.diam_int1,
+      spring.diam_int2,
+      spring.longitud,
+      spring.vueltas,
+      spring.extremo1,
+      spring.luz1,
+      spring.vuelta_red1,
+      spring.extremo2,
+      spring.luz2,
+      spring.vuelta_red2
+    )
     nodos_x_vta = 80
-    elementos = int(float(spring.vueltas) * nodos_x_vta)
-    nodos = elementos + 1
+    # nodos = int(float(spring.vueltas) * nodos_x_vta) + 1
+    nodos = len(NodeX)
     radio = (float(spring.diam) - float(spring.alambre)) / 2
     # DIVISIÓN DEL RESORTE EN CUERPO Y EXTREMOS
     h_helice = float(spring.longitud) - float(spring.alambre)
@@ -38,6 +63,7 @@ class Spring(models.Model):
     ### PROPIEDADES DEL MATERIAL DEL RESORTE 
     youngModulus = 206700 #en MPa
     shearModulus = 79500; #en MPa
+    kappa = 0.886
 
     ### CONDICIONES DE CONTORNO 
     lownode1 =  14  #10     #2         #
@@ -53,10 +79,10 @@ class Spring(models.Model):
     inercia = 0.25*math.pi*(float(spring.alambre)/2)**4 #en mm4
     inerciapolar = inercia*2 
 
-    NodeX = [node_coordX(i, radio) for i in node_theta]
-    NodeZ = [node_coordZ(i, radio) for i in node_theta]
-    NodeY = [node_coordY(i, nodos_x_vta,spring, h_extremo1, h_extremo2, h_helice, h_cuerpo) for i in node_vta]
-
+    # NodeX = [node_coordX(i, radio) for i in node_theta]
+    # NodeZ = [node_coordZ(i, radio) for i in node_theta]
+    # NodeY = [node_coordY(i, nodos_x_vta,spring, h_extremo1, h_extremo2, h_helice, h_cuerpo) for i in node_vta]
+    
     #Declarar las dimensiones XYZ de cada elemento viga
     ElemX, ElemY, ElemZ, Long = ([] for i in range(4))    
     #Declarar vectores unitarios axial(x), transversal(z) y vertical(y) del elemento
@@ -68,13 +94,10 @@ class Spring(models.Model):
     
     #OPERACIONES POR ELEMENTO  
     for ii in range(nodos):
-      if ii != nodos_x_vta*float(spring.vueltas):
-
+      if ii != nodos-1:
         #Direccion de los elementos
         ElemX.append(NodeX[ii+1]-NodeX[ii])
-        
         ElemY.append(NodeY[ii+1]-NodeY[ii])
-        
         ElemZ.append(NodeZ[ii+1]-NodeZ[ii])
         Long.append(math.pow(math.pow(ElemX[ii],2)+math.pow(ElemY[ii],2)+math.pow(ElemZ[ii],2),0.5))
 
@@ -111,27 +134,38 @@ class Spring(models.Model):
         ang_yZ.append(math.acos(unit_yZ[ii])*180/math.pi)
             
         #Elementos de la matriz de rigidez
-        kappa = 0.886
-        phi_z = 12*youngModulus*inercia/(kappa*shearModulus*area*math.pow(Long[ii],2))
-        phi_y = 12*youngModulus*inercia/(kappa*shearModulus*area*math.pow(Long[ii],2))
-        phi_bar_z = 1/(1+phi_z)
-        phi_bar_y = 1/(1+phi_y)
-
-        k1 = youngModulus*area/Long[ii]
-        k2 = 12*phi_bar_z*youngModulus*inercia/math.pow(Long[ii],3)
-        k3 = 6*phi_bar_z*youngModulus*inercia/math.pow(Long[ii],2)
-        k4 = 12*phi_bar_y*youngModulus*inercia/math.pow(Long[ii],3)
-        k5 = 6*phi_bar_y*youngModulus*inercia/math.pow(Long[ii],2)
-        k6 = shearModulus*inerciapolar/Long[ii]
-        k7 = (4+phi_y)*phi_bar_y*youngModulus*inercia/Long[ii]
-        k8 = (4+phi_z)*phi_bar_z*youngModulus*inercia/Long[ii]
-        k9 = (2-phi_y)*phi_bar_y*youngModulus*inercia/Long[ii]
-        k10 = (2-phi_z)*phi_bar_z*youngModulus*inercia/Long[ii]
+        print(kappa*shearModulus*area*math.pow(Long[ii],2))
+        k1, k2, k3, k4, k5, k6, k7, k8, k9, k10 = elementsStiffnessMatrix(Long[ii], youngModulus, inercia, area, shearModulus, inerciapolar, kappa)
 
         #Creacion de la matriz vacia de rigidez 12x12
         matrizRigLocal = np.zeros((12,12))
               
         #Asignacion de los elementos a la matriz
+        # matrizRigLocal = [
+        #   [k1 , 0  , 0  , 0  , 0  , 0  , -k1, 0  , 0  , 0  , 0  , 0  ],
+        #   [0  , k2 , 0  , 0  , -k5, k3 , 0  , -k2, 0  , 0  , 0  , k3 ],
+        #   [0  , 0  , k4 , 0  , 0  , 0  , 0  , 0  , -k4, 0  , -k5, 0  ],
+        #   [0  , 0  , 0  , k6 , k7 , 0  , 0  , 0  , 0  , -k6, 0  , 0  ],
+        #   [0  , 0  , -k5, 0  , 0  , 0  , 0  , 0  , k5 , 0  , k9 , 0  ],
+        #   [0  , k3 , 0  , 0  , 0  , k8 , 0  , -k3, 0  , 0  , 0  , k10],
+        #   [-k1, 0  , 0  , 0  , 0  , 0  , k1 , 0  , 0  , 0  , 0  , 0  ],
+        #   [0  , -k2, 0  , 0  , k5 , -k3, 0  , k2 , 0  , 0  , 0  , -k3],
+        #   [0  , 0  , -k4, 0  , 0  , 0  , 0  , 0  , k4 , 0  , k5 , 0  ],
+        #   [0  , 0  , 0  , -k6, k9 , 0  , 0  , 0  , 0  , k6 , 0  , 0  ],
+        #   [0  , 0  , -k5, 0  , 0  , 0  , 0  , 0  , k5 , 0  , k7 , 0  ],
+        #   [0  , k3 , 0  , 0  , 0  , k10, 0  , -k3, 0  , 0  , 0  , k8 ]
+        # ]
+
+        matrizRigLocal[2][10] = -k5
+        matrizRigLocal[4][10] = k9
+        matrizRigLocal[8][10] = k5
+        matrizRigLocal[10][10]= k7
+
+        matrizRigLocal[1][11] = k3
+        matrizRigLocal[5][11] = k10
+        matrizRigLocal[7][11] = -k3
+        matrizRigLocal[11][11]= k8
+
         matrizRigLocal[0][0]  = k1
         matrizRigLocal[6][0]  = -k1
 
@@ -173,16 +207,7 @@ class Spring(models.Model):
 
         matrizRigLocal[3][9]  = -k6
         matrizRigLocal[9][9]  = k6
-
-        matrizRigLocal[2][10] = -k5
-        matrizRigLocal[4][10] = k9
-        matrizRigLocal[8][10] = k5
-        matrizRigLocal[10][10]= k7
-
-        matrizRigLocal[1][11] = k3
-        matrizRigLocal[5][11] = k10
-        matrizRigLocal[7][11] = -k3
-        matrizRigLocal[11][11]= k8
+        
         
         #Matriz Vacia de transformacion de coordenadas local a global
         matrizTransCoord = np.zeros((12,12))
@@ -302,11 +327,11 @@ class Spring(models.Model):
       dispLoc = []
       dispGlob = []
       for nn in range(nodos):
-        if nn !=nodos_x_vta*float(spring.vueltas):
+        if nn != nodos - 1:
           dispGlob.append(displaceMatrix[nn]+displaceMatrix[nn+1])
 
       for mm in range(nodos):
-        if mm !=nodos_x_vta*float(spring.vueltas):
+        if mm != nodos - 1:
           dispglob1 = dispGlob[mm]
           dispLoc.append(np.dot(vectorT[mm],np.transpose(dispglob1)))
       
@@ -320,7 +345,7 @@ class Spring(models.Model):
       maxStressbyNode = []
 
       for pq in range(nodos):
-        if pq !=nodos_x_vta*float(spring.vueltas):
+        if pq !=nodos-1:
           longitud = Long[pq]
           u1 =    dispLoc[pq][0]
           u2 =    dispLoc[pq][6]
@@ -445,39 +470,9 @@ class Spring(models.Model):
     storeSummary.append(storecuz      )
 
     # showResults(storeSummary,deltaY,"RESUMEN")
-    print("AQUIII")
-    print(len(storeForceSum))
-    print("AQUIII")
     return [NodeX, NodeY, NodeZ ,storeForceSum, storeDispl, storeStress, deformacion, simulations]
     # return storeSummary
     # return [node_array, node_theta, node_vta]
 
 
-# Calcula coordenada X del nodo. Entrada: Posicion angular en grados sexagesimales.
-def node_coordX(nodeValue, radio):
-  return radio * math.cos(nodeValue * math.pi / 180)
 
-# Calcula coordenada Z del nodo. Entrada: Posicion angular en grados sexagesimales.
-def node_coordZ (nodeValue, radio):                
-  return -radio * math.sin(nodeValue * math.pi / 180)
-
-def node_coordY(node_value, nodos_x_vta, spring, h_extremo1, h_extremo2, h_helice, h_cuerpo):                 #Calcula coordenada Y del nodo. Entrada: Posicion angular en fraccion de vuelta.
-  if node_value<= 1:
-    return ((node_value*360)**2)/(360*360/h_extremo1)
-  elif node_value>(float(spring.vueltas) - 1):
-    return ((node_value*360-float(spring.vueltas) * 360)**2) / ( 360 * 360 / ( -h_extremo2) ) + h_helice
-  elif node_value>1 and node_value<=(float(spring.vueltas) - 1):
-    inc = h_cuerpo / ((float(spring.vueltas) - 2) * 360) * 360 / nodos_x_vta
-    return h_extremo1 + inc * ( node_value*nodos_x_vta-nodos_x_vta)
-
-def sumMatrix(bigMatrix,matrix,indexROW,indexCOL): 
-    """Suma los elementos una matriz (matrix) dentro de la matriz mayor (bigMatrix), desde unos índices iniciales (indexROW, indexCOL)."""
-    m=0   
-    for i in range(indexROW,indexROW+len(matrix)):
-        n=0
-        for j in range(indexCOL,indexCOL+len(matrix)):
-            bigMatrix[i][j] = bigMatrix[i][j]+ matrix[m][n]
-            n = n+1
-        m=m+1
-  
-    return bigMatrix

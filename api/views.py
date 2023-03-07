@@ -97,7 +97,15 @@ class SpringView(View):
                     vueltas=jd['vueltas'], 
                     longitud=jd['longitud'], 
                     luz1=jd['luz1'], 
-                    luz2=jd['luz2'])
+                    luz2=jd['luz2'],
+                    diam_int1=jd['diam_int1'],
+                    diam_int2=jd['diam_int2'],
+                    extremo1=jd['extremo1'],
+                    extremo2=jd['extremo2'],
+                    vuelta_red1=jd['vuelta_red1'],
+                    vuelta_red2=jd['vuelta_red2'],
+                    grado=jd['grado']
+                    )
     spring.save()
 
     start_time = time.time()
@@ -109,14 +117,13 @@ class SpringView(View):
               spring = spring
     )
     force.save()
-
     for i in range(len(NodeX)):
       posX, posY, posZ, stress = ([] for k in range(4))
       for j in range(len(storeDispl)):
         posX.append(NodeX[i] + storeDispl[j][i][0])
         posY.append(NodeY[i] + storeDispl[j][i][1])
         posZ.append(NodeZ[i] + storeDispl[j][i][2])
-        if i == 800:
+        if i == len(NodeX) - 1:
           stress.append(storeStress[j][i-1])
         else:  
           stress.append(storeStress[j][i])
