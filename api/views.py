@@ -135,7 +135,10 @@ class SpringView(View):
       point.save()
 
     print(time.time() - start_time)
-    datos={'message': 'Success'}
+    
+    points = list(Points.objects.filter(spring=spring.id).values())
+    forces = list(Forces.objects.filter(spring=spring.id).values())
+    datos={'message': 'Success', 'points': points, 'forces': forces}
     return JsonResponse(datos)
 
   def put(self, request, id):

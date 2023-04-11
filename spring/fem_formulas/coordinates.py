@@ -106,7 +106,7 @@ def ord_burbuja(arreglo):
 
 #------------------------------------------------------------------------------------------------------------------------
 #Ingreso de datos
-def calculo_coordenadas(d_str,D_str, d1_str, d2_str, L_str, N_str, E1, Luz1_str, vr1_str, E2, Luz2_str, vr2_str):
+def calculo_coordenadas(d_str,D_str, d1_str, d2_str, L_str, N_str, E1, Luz1_str, vr1_str, E2, Luz2_str, vr2_str, grado_str):
   # d_str = input("Diámetro del alambre: ")
   d = float(d_str)
   d_alambre = d
@@ -205,17 +205,6 @@ def calculo_coordenadas(d_str,D_str, d1_str, d2_str, L_str, N_str, E1, Luz1_str,
 
   y_total = y1+y2+y3+y4+y5
 
-  # print("P2: ", P2)
-  # print("P4: ", P4)
-  # print("K: ", K)
-  # print("Vueltas calculadas (Verificación): ", Ncalculado)
-  # print("Altura calculada: ", y_total)
-  # print("y1: ", y1)
-  # print("y2: ", y2)
-  # print("y3: ", y3)
-  # print("y4: ", y4)
-  # print("y5: ", y5)
-
   #---------------------------------------------------------------------------------------------------------------------------
   #Defino mis ecuaciones de tramo, tomando como el paso constante el hallada mediante el método de la secante
 
@@ -285,29 +274,21 @@ def calculo_coordenadas(d_str,D_str, d1_str, d2_str, L_str, N_str, E1, Luz1_str,
     C2 = 0
     t_vr2 = round(t_Mc2,5)
 
-  q = 0
-  while q < 1:
-    grado_str = input("Grado:")
-    grado = int(grado_str)
 
-    n_1 = n_nodos_multiploPi4(t_1,0,grado + 2) 
-    n_2 = n_nodos_multiploPi4(t_Mc1,t_1,grado + 2)
-    n_3 = n_nodos_multiploPi4(t_2,t_Mc1,grado + 2)
-    n_4 = n_nodos_multiploPi4(t_Mc2,t_2,grado + 2)
-    n_5 = n_nodos_multiploPi4(t_3,t_Mc2,grado + 2)
+  # grado_str = input("Grado:")
+  grado = int(grado_str)
 
-    nodos_totales = n_1 + 1 + n_2 + n_3 + n_4 + n_5
+  n_1 = n_nodos_multiploPi4(t_1,0,grado + 2) 
+  n_2 = n_nodos_multiploPi4(t_Mc1,t_1,grado + 2)
+  n_3 = n_nodos_multiploPi4(t_2,t_Mc1,grado + 2)
+  n_4 = n_nodos_multiploPi4(t_Mc2,t_2,grado + 2)
+  n_5 = n_nodos_multiploPi4(t_3,t_Mc2,grado + 2)
 
-    print("Cantidad de nodos totales será de: ")
-    print(nodos_totales)
+  nodos_totales = n_1 + 1 + n_2 + n_3 + n_4 + n_5
 
-    rpta = input("¿Está de acuerdo?")
-    if (rpta == "si"):
-      q = 2
-    elif (rpta == "no"):
-      q = 0
-    else:
-      print("Respuesta no valida")
+  print("Cantidad de nodos totales será de: ")
+  print(nodos_totales)
+
 
   #Ecuaciones por tramo, partiendo el eje y en 5 tramos
   ang_t1 = np.linspace(0,t_1,n_1 + 1) #nodos x cada tramo
@@ -784,5 +765,5 @@ def calculo_coordenadas(d_str,D_str, d1_str, d2_str, L_str, N_str, E1, Luz1_str,
 
   # print("Punto Inicial: X = ",resorte[0][0],", Y = ",resorte[0][1],", Z = ", resorte[0][2])
   # print("Punto Final: X = ",resorte[len(resorte)-1][0],", Y = ",resorte[len(resorte)-1][1],", Z = ", resorte[len(resorte)-1][2])
-  print(x_total)
+
   return [x_total, y_total, z_total]

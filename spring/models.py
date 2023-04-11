@@ -41,7 +41,8 @@ class Spring(models.Model):
       spring.vuelta_red1,
       spring.extremo2,
       spring.luz2,
-      spring.vuelta_red2
+      spring.vuelta_red2,
+      spring.grado
     )
     nodos_x_vta = 80
     # nodos = int(float(spring.vueltas) * nodos_x_vta) + 1
@@ -134,7 +135,6 @@ class Spring(models.Model):
         ang_yZ.append(math.acos(unit_yZ[ii])*180/math.pi)
             
         #Elementos de la matriz de rigidez
-        print(kappa*shearModulus*area*math.pow(Long[ii],2))
         k1, k2, k3, k4, k5, k6, k7, k8, k9, k10 = elementsStiffnessMatrix(Long[ii], youngModulus, inercia, area, shearModulus, inerciapolar, kappa)
 
         #Creacion de la matriz vacia de rigidez 12x12
