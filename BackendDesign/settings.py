@@ -85,14 +85,23 @@ WSGI_APPLICATION = 'BackendDesign.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'spring',
-        'USER': 'spring',
-        'PASSWORD': '123',
-        'HOST': 'localhost',
-        'PORT': '',
+        'NAME': 'railway',
+        'USER': 'postgres',
+        'PASSWORD': 'IVEUuzf6aREj8QBNTP9C',
+        'HOST': 'containers-us-west-36.railway.app',
+        'PORT': '5519',
     }
 }
 
+
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'spring',
+    #     'USER': 'spring',
+    #     'PASSWORD': '123',
+    #     'HOST': 'localhost',
+    #     'PORT': '',
+    # }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
