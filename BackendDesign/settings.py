@@ -59,11 +59,11 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'BackendDesign.urls'
 
 CSRF_TRUSTED_ORIGINS = ['http://localhost:3000', 'https://web-production-e49f.up.railway.app/']
-CORS_ORIGIN_ALLOW_ALL = False
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'https://web-production-e49f.up.railway.app/'
-]
+CORS_ORIGIN_ALLOW_ALL = True
+# CORS_ALLOWED_ORIGINS = [
+#     'http://localhost:3000',
+#     'https://web-production-e49f.up.railway.app/'
+# ]
 
 TEMPLATES = [
     {
