@@ -1,1 +1,1 @@
-web: python manange.py migrate && gunicorn BackEndDesign.wsgi
+web: python manange.py migrate && gunicorn BackendDesign.wsgi
